@@ -1,0 +1,584 @@
+---
+title: "ABCD.chronotype.regressions"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Install packages #
+```{r message=FALSE, warning=FALSE}
+rm(list = ls())
+options(stringsAsFactors = FALSE)
+
+library(lme4)
+library(lmerTest)
+library(MuMIn)
+library(sjPlot)
+```
+
+## Load pheontoye data #
+```{r}
+load("ABCD.Release.3.0.Merged.Data.Chronotype.Rda")
+abcdData_chronotype <- abcdData_chronotype_MSFCresid
+rm(abcdData_chronotype_MSFCresid)
+```
+
+## Group by sex and pubertal status #
+```{r}
+male <- filter(abcdData_chronotype, sex == "Male")
+male.pre.puberty <- filter(male, pds_p_ss_all_category_2 == "Pre Puberty")
+male.early.puberty <- filter(male, pds_p_ss_all_category_2 == "Early Puberty")
+male.pre.early.puberty <- filter(male, pds_p_ss_all_category_2 == "Pre Puberty" | pds_p_ss_all_category_2 == "Early Puberty" )
+male.mid.puberty <- filter(male, pds_p_ss_all_category_2 == "Mid Puberty")
+male.late.puberty <- filter(male, pds_p_ss_all_category_2 == "Late Puberty")
+male.post.puberty <- filter(male, pds_p_ss_all_category_2 == "Post Puberty")
+male.late.post.puberty <- filter(male, pds_p_ss_all_category_2 == "Late Puberty" | pds_p_ss_all_category_2 == "Post Puberty" )
+
+female <- filter(abcdData_chronotype, sex == "Female")
+female.pre.puberty <- filter(female, pds_p_ss_all_category_2 == "Pre Puberty")
+female.early.puberty <- filter(female, pds_p_ss_all_category_2 == "Early Puberty")
+female.pre.early.puberty <- filter(female, pds_p_ss_all_category_2 == "Pre Puberty" | pds_p_ss_all_category_2 == "Early Puberty" )
+female.mid.puberty <- filter(female, pds_p_ss_all_category_2 == "Mid Puberty")
+female.late.puberty <- filter(female, pds_p_ss_all_category_2 == "Late Puberty")
+female.post.puberty <- filter(female, pds_p_ss_all_category_2 == "Post Puberty")
+female.late.post.puberty <- filter(female, pds_p_ss_all_category_2 == "Late Puberty" | pds_p_ss_all_category_2 == "Post Puberty" )
+
+#pre.puberty <- filter(abcdData_chronotype, pds_p_ss_all_category_2 == "Pre Puberty")
+#early.puberty <- filter(abcdData_chronotype, pds_p_ss_all_category_2 == "Early Puberty")
+#pre.early.puberty <- filter(abcdData_chronotype, pds_p_ss_all_category_2 == "Pre Puberty" | pds_p_ss_all_category_2 == "Early Puberty" )
+#mid.puberty <- filter(abcdData_chronotype, pds_p_ss_all_category_2 == "Mid Puberty")
+#late.puberty <- filter(abcdData_chronotype, pds_p_ss_all_category_2 == "Late Puberty")
+#post.puberty <- filter(abcdData_chronotype, pds_p_ss_all_category_2 == "Post Puberty")
+#late.post.puberty <- filter(abcdData_chronotype, pds_p_ss_all_category_2 == "Late Puberty" | pds_p_ss_all_category_2 == "Post Puberty" )
+```
+
+## Regressions - all subjects #
+```{r}
+# Continuous chronotype PRS
+my.model0 <- lmer(mctq_msfsc_calc.24hr ~ 
+                   interview_age + ses_AvgIncomeParentEdu + pds_p_ss_all_category_2 + sex +
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l), 
+               data = abcdData_chronotype, na.action = na.omit, REML = FALSE)
+print(summary(my.model0))
+r.squaredGLMM(my.model0)
+
+my.model1 <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                   interview_age + ses_AvgIncomeParentEdu + pds_p_ss_all_category_2 + sex +
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l), 
+               data = abcdData_chronotype, na.action = na.omit, REML = FALSE)
+print(summary(my.model1))
+r.squaredGLMM(my.model1)
+anova(my.model0, my.model1)
+```
+
+## Regressions - by sex #
+```{r}
+# Male
+my.model0 <- lmer(mctq_msfsc_calc.24hr ~ 
+                 interview_age + ses_AvgIncomeParentEdu + pds_p_ss_all_category_2 +
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l), 
+                    data = male, na.action = na.omit, REML = FALSE)
+print(summary(my.model0))
+r.squaredGLMM(my.model0)
+
+my.model1 <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                 interview_age + ses_AvgIncomeParentEdu + pds_p_ss_all_category_2 +
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l), 
+                    data = male, na.action = na.omit, REML = FALSE)
+print(summary(my.model1))
+r.squaredGLMM(my.model1) 
+anova(my.model0, my.model1)
+
+# Female
+my.model0 <- lmer(mctq_msfsc_calc.24hr ~ 
+                 interview_age + ses_AvgIncomeParentEdu + pds_p_ss_all_category_2 +
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l),  
+                    data = female, na.action = na.omit, REML = FALSE)
+print(summary(my.model0))
+r.squaredGLMM(my.model0) 
+
+my.model1 <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                 interview_age + ses_AvgIncomeParentEdu + pds_p_ss_all_category_2 +
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l),  
+                    data = female, na.action = na.omit, REML = FALSE)
+print(summary(my.model1))
+r.squaredGLMM(my.model1) 
+anova(my.model0, my.model1) 
+```
+
+## Interaction - sex #
+```{r}
+my.model <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE)*sex + 
+                 interview_age + ses_AvgIncomeParentEdu + as.numeric(pds_p_ss_all_category_2) +
+                 pc1 + pc2 + pc3 + pc4 +  pc5 + (1|site_id_l),
+                    data = abcdData_chronotype, na.action = na.omit, REML = FALSE)
+print(summary(my.model))
+```
+
+## Interaction - pubertal stage #
+```{r}
+my.model <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE)*as.numeric(pds_p_ss_all_category_2) + 
+                 sex +
+                 interview_age + ses_AvgIncomeParentEdu + 
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l),
+                    data = abcdData_chronotype, na.action = na.omit, REML = FALSE)
+print(summary(my.model))
+```
+
+## Interaction - sex + pubertal stage #
+```{r}
+my.model0 <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE)*sex + 
+                as.numeric(pds_p_ss_all_category_2) +
+                 interview_age + ses_AvgIncomeParentEdu +
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l),
+                    data = abcdData_chronotype, na.action = na.omit, REML = FALSE)
+print(summary(my.model0)) 
+
+plot0 <- plot_model(my.model0, type = "pred", terms = c("PRS.CHRONOTYPE.JONES.NoMHC", "pds_p_ss_all_category_2", "sex"))
+plot0$facet$params$nrow=2
+plot0
+
+my.model1 <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE)*sex + 
+                scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE)*as.numeric(pds_p_ss_all_category_2) + 
+                 interview_age + ses_AvgIncomeParentEdu +
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l),
+                data = abcdData_chronotype, na.action = na.omit, REML = FALSE)
+print(summary(my.model1)) 
+
+anova(my.model0, my.model1) 
+
+plot1 <- plot_model(my.model1, type = "pred", terms = c("PRS.CHRONOTYPE.JONES.NoMHC", "pds_p_ss_all_category_2", "sex"))
+plot1$facet$params$nrow=2
+plot1
+```
+
+## Regression by pubertal stage - male #
+```{r}
+# Pre puberty
+my.model <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                 interview_age + ses_AvgIncomeParentEdu + 
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l), 
+                    data = male.pre.puberty, na.action = na.omit, REML = FALSE)
+print(summary(my.model))    
+
+# Early puberty
+my.model <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                 interview_age + ses_AvgIncomeParentEdu + 
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l), 
+                    data = male.early.puberty, na.action = na.omit, REML = FALSE)
+print(summary(my.model)) 
+
+# Mid puberty
+my.model <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                 interview_age + ses_AvgIncomeParentEdu + 
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l), 
+                    data = male.mid.puberty, na.action = na.omit, REML = FALSE)
+print(summary(my.model)) 
+
+# Late puberty
+my.model <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                 interview_age + ses_AvgIncomeParentEdu + 
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l), 
+                    data = male.late.puberty, na.action = na.omit, REML = FALSE)
+print(summary(my.model)) 
+```
+
+## Regression by pubertal stage - female #
+```{r}
+# Pre puberty
+my.model <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                 interview_age + ses_AvgIncomeParentEdu + 
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l), 
+                    data = female.pre.puberty, na.action = na.omit, REML = FALSE)
+print(summary(my.model)) 
+
+# Early puberty
+my.model <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                 interview_age + ses_AvgIncomeParentEdu + 
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l), 
+                    data = female.early.puberty, na.action = na.omit, REML = FALSE)
+print(summary(my.model)) 
+
+# Mid puberty
+my.model <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                 interview_age + ses_AvgIncomeParentEdu + 
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l), 
+                    data = female.mid.puberty, na.action = na.omit, REML = FALSE)
+print(summary(my.model)) 
+
+# Late/post puberty
+my.model <- lmer(mctq_msfsc_calc.24hr ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                 interview_age + ses_AvgIncomeParentEdu + 
+                 pc1 + pc2 + pc3 + pc4 + pc5 + (1|site_id_l), 
+                    data = female.late.post.puberty, na.action = na.omit, REML = FALSE)
+print(summary(my.model)) 
+```
+
+## Prep data #
+```{r}
+abcdData_chronotype$bis_y_ss_bas_rr_plus1 <- (abcdData_chronotype$bis_y_ss_bas_rr +1)
+which(colnames(abcdData_chronotype) == "bis_y_ss_bas_rr_plus1") #2537 #######
+
+abcdData_chronotype$bis_y_ss_bas_drive_plus1 <- (abcdData_chronotype$bis_y_ss_bas_drive +1)
+which(colnames(abcdData_chronotype) == "bis_y_ss_bas_drive_plus1") #2538 ########
+
+abcdData_chronotype$pgbi_p_ss_score_plus1 <- (abcdData_chronotype$pgbi_p_ss_score +1)
+which(colnames(abcdData_chronotype) == "pgbi_p_ss_score_plus1") #2539 ########
+
+abcdData_chronotype$pps_y_ss_number_plus1 <- (abcdData_chronotype$pps_y_ss_number +1)
+which(colnames(abcdData_chronotype) == "pps_y_ss_number_plus1") #2540 ########
+
+abcdData_chronotype$pps_y_ss_severity_score_plus1 <- (abcdData_chronotype$pps_y_ss_severity_score +1)
+which(colnames(abcdData_chronotype) == "pps_y_ss_severity_score_plus1") #2541 ##########
+```
+
+## MSFc PheWAS - baseline - all #
+```{r}
+datalist <- list(abcdData_chronotype)
+names(datalist) <- c("abcdData_chronotype")
+
+# Linear model
+for (j in 1:length(datalist)) {
+df.linear <- data.frame() 
+
+  for (i in c(345, 346, 349:351, 353, 72, 336, 342)) {
+    this_var = datalist[[j]][, i]
+    my.model <- lm(as.matrix(this_var) ~ scale(mctq_msfsc_calc.24hr, center = TRUE, scale = TRUE) + 
+                      interview_age + ses_AvgIncomeParentEdu + sex + pds_p_ss_all_category_2 +
+                     pc1 + pc2 + pc3 + pc4 +  pc5 + pc6 + pc7 + pc8 + pc9 + pc10 +
+                     site_id_l, 
+                    data = datalist[[j]], na.action = na.omit)
+df.linear <- rbind(df.linear, data.frame(data = names(datalist)[j],
+                               ID = colnames(datalist[[j]])[i], 
+                               beta_PRS = summary(my.model)$coefficients[2, 1],
+                               stderr_PRS = summary(my.model)$coefficients[2, 2],
+                               P_PRS = summary(my.model)$coefficients[2, 4]))
+  }
+
+# Gamma log-link
+df.gamma <- data.frame() 
+  for (i in c(10:16, 62:71, 73:81, 314:317, 319, 334:335, 337:338, 2538:2542)) {
+    this_var = datalist[[j]][, i]
+    my.model <- glm(as.matrix(this_var) ~ scale(mctq_msfsc_calc.24hr, center = TRUE, scale = TRUE) + 
+                      interview_age + ses_AvgIncomeParentEdu + sex + pds_p_ss_all_category_2 +
+                      pc1 + pc2 + pc3 + pc4 +  pc5 + pc6 + pc7 + pc8 + pc9 + pc10 + 
+                      site_id_l, 
+                    data = datalist[[j]], na.action = na.omit, family = Gamma(link = "log"))
+df.gamma <- rbind(df.gamma, data.frame(data = names(datalist)[j],
+                               ID = colnames(datalist[[j]])[i], 
+                               beta_PRS = summary(my.model)$coefficients[2, 1],
+                               stderr_PRS = summary(my.model)$coefficients[2, 2],
+                               P_PRS = summary(my.model)$coefficients[2, 4]))
+  }
+  
+df.all <- rbind(df.linear, df.gamma)
+df.all$FDR_PRS <- p.adjust(df.by.ethnicity$P_PRS,'fdr')
+print(df.all)
+
+df.all[1, 2] = "NIH Toolbox Picture Vocabulary"
+df.all[2, 2] = "NIH Toolbox Flanker"
+df.all[3, 2] = "NIH Toolbox Pattern Comparison"
+df.all[4, 2] = "NIH Toolbox Picture Memory"
+df.all[5, 2] = "NIH Toolbox Reading"
+df.all[6, 2] = "NIH Toolbox Crystalized"
+df.all[7, 2] = "CBCL Total Problems"
+df.all[8, 2] = "UPPS Sensation Seeking"
+df.all[9, 2] = "BIS/BAS Fun Seeking"
+df.all[10, 2] = "SDS Maintaining Sleep"
+df.all[11, 2] = "SDS Sleep Breathing"
+df.all[12, 2] = "SDS Disorders of Arousal"
+df.all[13, 2] = "SDS Sleep-Wake Transition Disorders"
+df.all[14, 2] = "SDS Excessive Somnolemce"
+df.all[15, 2] = "SDS Sleep Hyperhydrosis"
+df.all[16, 2] = "SDS Total Sleep Problems"
+df.all[17, 2] = "CBCL Anx/Depress"
+df.all[18, 2] = "CBCL Withdrawn/Depress"
+df.all[19, 2] = "CBCL Somatic Complaints"
+df.all[20, 2] = "CBCL Social Problems"
+df.all[21, 2] = "CBCL Thought Problems"
+df.all[22, 2] = "CBCL Attention Problems"
+df.all[23, 2] = "CBCL Rule Breaking"
+df.all[24, 2] = "CBCL Aggressive Behavior"
+df.all[25, 2] = "CBCL Internalizing"
+df.all[26, 2] = "CBCL Externalizing"
+df.all[27, 2] = "CBCL Depression"
+df.all[28, 2] = "CBCL Anxiety Disorders"
+df.all[29, 2] = "CBCL Somatic Problems"
+df.all[30, 2] = "CBCL ADHD"
+df.all[31, 2] = "CBCL Oppositional Defiant"
+df.all[32, 2] = "CBCL Conduct Problems"
+df.all[33, 2] = "CBCL Sluggish Cog Tempp"
+df.all[34, 2] = "CBCL OCD"
+df.all[35, 2] = "CBCL Stress"
+df.all[36, 2] = "BRIEF Attention"
+df.all[37, 2] = "BRIEF Internal"
+df.all[38, 2] = "BRIEF External"
+df.all[39, 2] = "BRIEF Total Problems"
+df.all[40, 2] = "Social Responsiveness Scale Tot"
+df.all[41, 2] = "UPPS-P Negative Urgency"
+df.all[42, 2] = "UPPS-P Lack Planning"
+df.all[43, 2] = "UPPS-P Positive Urgency"
+df.all[44, 2] = "UPPS-P Lack Perserverance"
+df.all[45, 2] = "BIS/BAS Reward Responsiveness"
+df.all[46, 2] = "BIS/BAS Drive"
+df.all[47, 2] = "Parent General Behavior Inventory"
+df.all[48, 2] = "Prodromal Psychosis Number"
+df.all[49, 2] = "Prodromal Psychosis Severity"
+
+bl <- colorRampPalette(c("navy","royalblue","lightskyblue"))(200)                       
+re <- colorRampPalette(c("mistyrose", "red2","darkred"))(200)
+
+plot <- ggplot(df.all[df.all$P_PRS<1,],
+               aes(x=reorder(ID, -log10(FDR_PRS) * sign(beta_PRS)), y=-log10(FDR_PRS), fill=beta_PRS)) +
+  geom_bar(stat='identity') + coord_flip() + 
+  geom_hline(yintercept = -log10(0.05),lty=2) + 
+  scale_fill_gradientn(colours=c(bl,"white",re),na.value="grey", limits=c(-1.2,1.2)) +
+  theme(legend.position = "right") +
+  labs(x="", y="-log(FDR)") +
+  ggtitle("MSFc Associations with Mental Health / Cognition")
+
+print(plot)
+}
+```
+
+## PGS PheWAS - baseline - female #
+```{r}
+female_phewas <- filter(abcdData_chronotype, sex == "Female")
+
+datalist <- list(female_phewas)
+names(datalist) <- c("female_phewas")
+
+# Linear model
+for (j in 1:length(datalist)) {
+df.linear <- data.frame() 
+
+  for (i in c(345, 346, 349:351, 353, 72, 336, 342)) {
+    this_var = datalist[[j]][, i]
+    my.model <- lm(as.matrix(this_var) ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                      interview_age + ses_AvgIncomeParentEdu + pds_p_ss_all_category_2 +
+                     pc1 + pc2 + pc3 + pc4 +  pc5 + pc6 + pc7 + pc8 + pc9 + pc10 +
+                     site_id_l, 
+                    data = datalist[[j]], na.action = na.omit)
+df.linear <- rbind(df.linear, data.frame(data = names(datalist)[j],
+                               ID = colnames(datalist[[j]])[i], 
+                               beta_PRS = summary(my.model)$coefficients[2, 1],
+                               stderr_PRS = summary(my.model)$coefficients[2, 2],
+                               P_PRS = summary(my.model)$coefficients[2, 4]))
+  }
+
+# Gamma log-link
+df.gamma <- data.frame() 
+  for (i in c(10:16, 62:71, 73:81, 314:317, 319, 334:335, 337:338, 2538:2542)) {
+    this_var = datalist[[j]][, i]
+    my.model <- glm(as.matrix(this_var) ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                      interview_age + ses_AvgIncomeParentEdu + pds_p_ss_all_category_2 +
+                      pc1 + pc2 + pc3 + pc4 +  pc5 + pc6 + pc7 + pc8 + pc9 + pc10 + 
+                      site_id_l, 
+                    data = datalist[[j]], na.action = na.omit, family = Gamma(link = "log"))
+df.gamma <- rbind(df.gamma, data.frame(data = names(datalist)[j],
+                               ID = colnames(datalist[[j]])[i], 
+                               beta_PRS = summary(my.model)$coefficients[2, 1],
+                               stderr_PRS = summary(my.model)$coefficients[2, 2],
+                               P_PRS = summary(my.model)$coefficients[2, 4]))
+  }
+  
+df.female <- rbind(df.linear, df.gamma)
+df.female$FDR_PRS <- p.adjust(df.female$P_PRS,'fdr')
+print(df.female)
+
+df.female[1, 2] = "NIH Toolbox Picture Vocabulary"
+df.female[2, 2] = "NIH Toolbox Flanker"
+df.female[3, 2] = "NIH Toolbox Pattern Comparison"
+df.female[4, 2] = "NIH Toolbox Picture Memory"
+df.female[5, 2] = "NIH Toolbox Reading"
+df.female[6, 2] = "NIH Toolbox Crystalized"
+df.female[7, 2] = "CBCL Total Problems"
+df.female[8, 2] = "UPPS Sensation Seeking"
+df.female[9, 2] = "BIS/BAS Fun Seeking"
+df.female[10, 2] = "SDS Maintaining Sleep"
+df.female[11, 2] = "SDS Sleep Breathing"
+df.female[12, 2] = "SDS Disorders of Arousal"
+df.female[13, 2] = "SDS Sleep-Wake Transition Disorders"
+df.female[14, 2] = "SDS Excessive Somnolemce"
+df.female[15, 2] = "SDS Sleep Hyperhydrosis"
+df.female[16, 2] = "SDS Total Sleep Problems"
+df.female[17, 2] = "CBCL Anx/Depress"
+df.female[18, 2] = "CBCL Withdrawn/Depress"
+df.female[19, 2] = "CBCL Somatic Complaints"
+df.female[20, 2] = "CBCL Social Problems"
+df.female[21, 2] = "CBCL Thought Problems"
+df.female[22, 2] = "CBCL Attention Problems"
+df.female[23, 2] = "CBCL Rule Breaking"
+df.female[24, 2] = "CBCL Aggressive Behavior"
+df.female[25, 2] = "CBCL Internalizing"
+df.female[26, 2] = "CBCL Externalizing"
+df.female[27, 2] = "CBCL Depression"
+df.female[28, 2] = "CBCL Anxiety Disorders"
+df.female[29, 2] = "CBCL Somatic Problems"
+df.female[30, 2] = "CBCL ADHD"
+df.female[31, 2] = "CBCL Oppositional Defiant"
+df.female[32, 2] = "CBCL Conduct Problems"
+df.female[33, 2] = "CBCL Sluggish Cog Tempp"
+df.female[34, 2] = "CBCL OCD"
+df.female[35, 2] = "CBCL Stress"
+df.female[36, 2] = "BREIF Attention"
+df.female[37, 2] = "BRIEF Internal"
+df.female[38, 2] = "BRIEF External"
+df.female[39, 2] = "BRIEF Total Problems"
+df.female[40, 2] = "Social Responsiveness Scale Tot"
+df.female[41, 2] = "UPPS-P Negative Urgency"
+df.female[42, 2] = "UPPS-P Lack Planning"
+df.female[43, 2] = "UPPS-P Positive Urgency"
+df.female[44, 2] = "UPPS-P Lack Perserverance"
+df.female[45, 2] = "BIS/BAS Reward Responsiveness"
+df.female[46, 2] = "BIS/BAS Drive"
+df.female[47, 2] = "Parent General Behavior Inventory"
+df.female[48, 2] = "Prodromal Psychosis Number"
+df.female[49, 2] = "Prodromal Psychosis Severity"
+
+plot <- ggplot(df.female[df.female$P_PRS<1,],
+               aes(x=reorder(ID, -log10(FDR_PRS) * sign(beta_PRS)), y=-log10(FDR_PRS), fill=beta_PRS)) +
+  geom_bar(stat='identity') + coord_flip() + 
+  geom_hline(yintercept = -log10(0.05),lty=2) + 
+  scale_fill_gradientn(colours=c(bl,"white",re),na.value="grey", limits=c(-1.2,1.2)) +
+  theme(legend.position = "right") +
+  labs(x="", y="-log(FDR)") +
+  ggtitle("Female: Chronotype PGS Associations")
+
+print(plot)
+  
+}
+```
+
+## PRS PheWAS - baseline - male #
+```{r}
+male_phewas <- filter(abcdData_chronotype, sex == "Male")
+
+datalist <- list(male_phewas)
+names(datalist) <- c("male_phewas")
+
+# Linear model
+for (j in 1:length(datalist)) {
+df.linear <- data.frame() 
+
+  for (i in c(345, 346, 349:351, 353, 72, 336, 342)) {
+    this_var = datalist[[j]][, i]
+    my.model <- lm(as.matrix(this_var) ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                      interview_age + ses_AvgIncomeParentEdu + pds_p_ss_all_category_2 +
+                     pc1 + pc2 + pc3 + pc4 +  pc5 + pc6 + pc7 + pc8 + pc9 + pc10 +
+                     site_id_l, 
+                    data = datalist[[j]], na.action = na.omit)
+df.linear <- rbind(df.linear, data.frame(data = names(datalist)[j],
+                               ID = colnames(datalist[[j]])[i], 
+                               beta_PRS = summary(my.model)$coefficients[2, 1],
+                               stderr_PRS = summary(my.model)$coefficients[2, 2],
+                               P_PRS = summary(my.model)$coefficients[2, 4]))
+  }
+
+# Gamma log-link
+df.gamma <- data.frame() 
+  for (i in c(10:16, 62:71, 73:81, 314:317, 319, 334:335, 337:338, 2538:2542)) {
+    this_var = datalist[[j]][, i]
+    my.model <- glm(as.matrix(this_var) ~ scale(PRS.CHRONOTYPE.JONES.NoMHC, center = TRUE, scale = TRUE) + 
+                      interview_age + ses_AvgIncomeParentEdu + pds_p_ss_all_category_2 +
+                      pc1 + pc2 + pc3 + pc4 +  pc5 + pc6 + pc7 + pc8 + pc9 + pc10 + 
+                      site_id_l, 
+                    data = datalist[[j]], na.action = na.omit, family = Gamma(link = "log"))
+df.gamma <- rbind(df.gamma, data.frame(data = names(datalist)[j],
+                               ID = colnames(datalist[[j]])[i], 
+                               beta_PRS = summary(my.model)$coefficients[2, 1],
+                               stderr_PRS = summary(my.model)$coefficients[2, 2],
+                               P_PRS = summary(my.model)$coefficients[2, 4]))
+  }
+  
+df.male <- rbind(df.linear, df.gamma)
+df.male$FDR_PRS <- p.adjust(df.male$P_PRS,'fdr')
+print(df.male)
+
+df.male[1, 2] = "NIH Toolbox Picture Vocabulary"
+df.male[2, 2] = "NIH Toolbox Flanker"
+df.male[3, 2] = "NIH Toolbox Pattern Comparison"
+df.male[4, 2] = "NIH Toolbox Picture Memory"
+df.male[5, 2] = "NIH Toolbox Reading"
+df.male[6, 2] = "NIH Toolbox Crystalized"
+df.male[7, 2] = "CBCL Total Problems"
+df.male[8, 2] = "UPPS Sensation Seeking"
+df.male[9, 2] = "BIS/BAS Fun Seeking"
+df.male[10, 2] = "SDS Maintaining Sleep"
+df.male[11, 2] = "SDS Sleep Breathing"
+df.male[12, 2] = "SDS Disorders of Arousal"
+df.male[13, 2] = "SDS Sleep-Wake Transition Disorders"
+df.male[14, 2] = "SDS Excessive Somnolemce"
+df.male[15, 2] = "SDS Sleep Hyperhydrosis"
+df.male[16, 2] = "SDS Total Sleep Problems"
+df.male[17, 2] = "CBCL Anx/Depress"
+df.male[18, 2] = "CBCL Withdrawn/Depress"
+df.male[19, 2] = "CBCL Somatic Complaints"
+df.male[20, 2] = "CBCL Social Problems"
+df.male[21, 2] = "CBCL Thought Problems"
+df.male[22, 2] = "CBCL Attention Problems"
+df.male[23, 2] = "CBCL Rule Breaking"
+df.male[24, 2] = "CBCL Aggressive Behavior"
+df.male[25, 2] = "CBCL Internalizing"
+df.male[26, 2] = "CBCL Externalizing"
+df.male[27, 2] = "CBCL Depression"
+df.male[28, 2] = "CBCL Anxiety Disorders"
+df.male[29, 2] = "CBCL Somatic Problems"
+df.male[30, 2] = "CBCL ADHD"
+df.male[31, 2] = "CBCL Oppositional Defiant"
+df.male[32, 2] = "CBCL Conduct Problems"
+df.male[33, 2] = "CBCL Sluggish Cog Tempp"
+df.male[34, 2] = "CBCL OCD"
+df.male[35, 2] = "CBCL Stress"
+df.male[36, 2] = "BREIF Attention"
+df.male[37, 2] = "BRIEF Internal"
+df.male[38, 2] = "BRIEF External"
+df.male[39, 2] = "BRIEF Total Problems"
+df.male[40, 2] = "Social Responsiveness Scale Tot"
+df.male[41, 2] = "UPPS-P Negative Urgency"
+df.male[42, 2] = "UPPS-P Lack Planning"
+df.male[43, 2] = "UPPS-P Positive Urgency"
+df.male[44, 2] = "UPPS-P Lack Perserverance"
+df.male[45, 2] = "BIS/BAS Reward Responsiveness"
+df.male[46, 2] = "BIS/BAS Drive"
+df.male[47, 2] = "Parent General Behavior Inventory"
+df.male[48, 2] = "Prodromal Psychosis Number"
+df.male[49, 2] = "Prodromal Psychosis Severity"
+
+plot <- ggplot(df.male[df.male$P_PRS<1,],
+               aes(x=reorder(ID, -log10(FDR_PRS) * sign(beta_PRS)), y=-log10(FDR_PRS), fill=beta_PRS)) +
+  geom_bar(stat='identity') + coord_flip() + 
+  geom_hline(yintercept = -log10(0.05),lty=2) + 
+  scale_fill_gradientn(colours=c(bl,"white",re),na.value="grey", limits=c(-1.2,1.2)) +
+  theme(legend.position = "right") +
+  labs(x="", y="-log(FDR)") +
+  ggtitle("Male: Chronotype PGS Associations")
+
+print(plot)
+  
+}
+```
+
+## Combine plots #
+```{r}
+# Merge data frames
+df.pgs.all <- rbind(df.female, df.male)
+
+df.pgs.all$neg10_log_fdr <- -log10(df.pgs.all$FDR_PRS)
+
+df.pgs.all$neg10_log_fdr[df.pgs.all$data == "female_phewas"] <-  -df.pgs.all$neg10_log_fdr[df.pgs.all$data == "female_phewas"]
+
+x <- (-log10(0.05))
+neg_x <- -x
+
+df.pgs.all %>%
+  ggplot() +
+  geom_col(aes(x =reorder(ID, abs(neg10_log_fdr)), y =neg10_log_fdr, fill = beta_PRS)) + 
+  scale_fill_gradientn(colours=c(bl,"white",re),na.value="grey", limits=c(-1.2,1.2)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.4)) +
+  geom_hline(yintercept = 0, lty = 1) +
+  geom_hline(yintercept = x, lty = 2) +
+  geom_hline(yintercept = neg_x, lty = 2) +
+  theme(legend.position = "right") +
+  theme(axis.text.x=element_text(hjust=0.95))
+```

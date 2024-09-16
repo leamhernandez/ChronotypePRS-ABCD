@@ -1,0 +1,213 @@
+---
+title: "ABCD.chronotype.descriptives"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Install packages #
+```{r message=FALSE, warning=FALSE}
+rm(list = ls())
+options(stringsAsFactors = FALSE)
+
+library(tidyverse)
+library(naniar)
+library(gtsummary)
+library(ggpubr)
+```
+
+## Load pheontoye data #
+```{r}
+load("ABCD.Release.3.0.Merged.Data.Rda")
+names(abcdData)[names(abcdData) == "subjectkey"] <- "src_subject_id"
+```
+
+## Load PRS #
+```{r}
+setwd("../data")
+prs_chronotype <- read.delim("ABCD.PRS.Chronotype.Jones.txt",  header = TRUE, na.strings = c("", "NA"))
+prs_chronotype <- dplyr::select(prs_chronotype, IID, SCORE)
+colnames(prs_chronotype) <- c("src_subject_id", "PRS.CHRONOTYPE.JONES.NoMHC")
+prs_chronotype$src_subject_id <- substr(prs_chronotype$src_subject_id, 11, 26)
+```
+
+## Merge phenotype and PRS data #
+```{r}
+abcdData <- merge(abcdData, prs_chronotype, by = c("src_subject_id"), all.x = TRUE)
+```
+
+## Filter based on eventname #
+```{r}
+abcdData <- filter(abcdData, eventname == "2_year_follow_up_y_arm_1")
+```
+
+## Keep participants with chronotype data #
+```{r}
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+
+abcdData_chronotype <- completeFun(abcdData, "mctq_msfsc_calc") 
+abcdData_chronotype <- as.data.frame(abcdData_chronotype) 
+```
+
+## Keep participants with complete data #
+```{r}
+abcdData_chronotype <- abcdData_chronotype %>%
+  replace_with_na(replace = list(sex = c(777,999)))
+
+abcdData_chronotype <- abcdData_chronotype %>% filter(!is.na(PRS.CHRONOTYPE.JONES.NoMHC)) 
+abcdData_chronotype <- abcdData_chronotype %>% filter(!is.na(mctq_msfsc_calc)) 
+abcdData_chronotype <- abcdData_chronotype[abcdData_chronotype$ses_AvgIncomeParentEdu<=100,] 
+abcdData_chronotype <- abcdData_chronotype %>% filter(!is.na(interview_age)) 
+abcdData_chronotype <- abcdData_chronotype %>% filter(!is.na(ses_AvgIncomeParentEdu)) 
+abcdData_chronotype <- abcdData_chronotype %>% filter(!is.na(sex)) 
+abcdData_chronotype <- abcdData_chronotype %>% filter(!is.na(site_id_l)) 
+```
+
+## Rename levels of pubertal status #
+```{r}
+# Combine male/female
+abcdData_chronotype <- abcdData_chronotype %>% mutate(pds_p_ss_all_category_2 = coalesce(pds_p_ss_male_category_2, pds_p_ss_female_category_2)) 
+abcdData_chronotype$pds_p_ss_all_category_2 <- as.factor(abcdData_chronotype$pds_p_ss_all_category_2)
+abcdData_chronotype <- abcdData_chronotype %>% filter(!is.na(pds_p_ss_all_category_2))
+abcdData_chronotype %>% group_by(pds_p_ss_all_category_2) %>% tally()
+
+## Define variable
+abcdData_chronotype$pds_p_ss_all_category_2_num <- as.numeric(abcdData_chronotype$pds_p_ss_all_category_2)
+
+## Rename
+levels(abcdData_chronotype$pds_p_ss_all_category_2)
+levels(abcdData_chronotype$pds_p_ss_all_category_2)[levels(abcdData_chronotype$pds_p_ss_all_category_2)=="1"] <- "Pre Puberty"
+levels(abcdData_chronotype$pds_p_ss_all_category_2)[levels(abcdData_chronotype$pds_p_ss_all_category_2)=="2"] <- "Early Puberty"
+levels(abcdData_chronotype$pds_p_ss_all_category_2)[levels(abcdData_chronotype$pds_p_ss_all_category_2)=="3"] <- "Mid Puberty"
+levels(abcdData_chronotype$pds_p_ss_all_category_2)[levels(abcdData_chronotype$pds_p_ss_all_category_2)=="4"] <- "Late Puberty"
+levels(abcdData_chronotype$pds_p_ss_all_category_2)[levels(abcdData_chronotype$pds_p_ss_all_category_2)=="5"] <- "Post Puberty"
+levels(abcdData_chronotype$pds_p_ss_all_category_2)
+```
+
+## Fit 24 hr clock #
+```{r}
+my.plot <- hist.plot <- abcdData_chronotype %>%
+    ggplot(aes(x=mctq_msfsc_calc, fill=mctq_msfsc_calc)) +
+    geom_histogram(color="black", alpha=0.6) +
+    labs(x='mctq_msfsc_calc') + 
+    ggtitle('Chronotype (MFSfc)')
+print(my.plot)
+
+abcdData_chronotype$mctq_msfsc_calc.24hr <- ifelse(abcdData_chronotype$mctq_msfsc_calc >= 24, as.numeric(abcdData_chronotype$mctq_msfsc_calc)-24, abcdData_chronotype$mctq_msfsc_calc)
+
+mean(abcdData_chronotype$mctq_msfsc_calc.24hr)
+range(abcdData_chronotype$mctq_msfsc_calc.24hr)
+hist(abcdData_chronotype$mctq_msfsc_calc.24hr, breaks = 50)
+
+my.plot <- hist.plot <- abcdData_chronotype %>%
+    ggplot(aes(x=mctq_msfsc_calc.24hr, fill=mctq_msfsc_calc.24hr)) +
+    geom_histogram(color="black", alpha=0.6) +
+    labs(x='mctq_msfsc_calc.24hr') + 
+    ggtitle('Chronotype (MFSfc)')
+print(my.plot)
+```
+
+### Limit to MSFc less than or equal to 12 #
+```{r}
+abcdData_chronotype <- abcdData_chronotype[abcdData_chronotype$mctq_msfsc_calc.24hr<=12,] 
+
+my.plot <- hist.plot <- abcdData_chronotype %>%
+    ggplot(aes(x=mctq_msfsc_calc.24hr, fill=mctq_msfsc_calc.24hr)) +
+    geom_histogram(color="black", alpha=0.6) +
+    labs(x='Chronotype (MSFc)', y = 'Count') 
+print(my.plot)
+```
+
+## Rename levels of race/ethnicity #
+```{r}
+abcdData_chronotype$race_ethnicity <- as.factor(abcdData_chronotype$race_ethnicity)
+levels(abcdData_chronotype$race_ethnicity)
+levels(abcdData_chronotype$race_ethnicity)[levels(abcdData_chronotype$race_ethnicity)=="1"] <- "White"
+levels(abcdData_chronotype$race_ethnicity)[levels(abcdData_chronotype$race_ethnicity)=="2"] <- "Black"
+levels(abcdData_chronotype$race_ethnicity)[levels(abcdData_chronotype$race_ethnicity)=="3"] <- "Hispanic"
+levels(abcdData_chronotype$race_ethnicity)[levels(abcdData_chronotype$race_ethnicity)=="4"] <- "Asian"
+levels(abcdData_chronotype$race_ethnicity)[levels(abcdData_chronotype$race_ethnicity)=="5"] <- "Other"
+levels(abcdData_chronotype$race_ethnicity)
+```
+
+## Plot pubertal status by sex #
+```{r}
+abcdData_chronotype$sex = as.factor(abcdData_chronotype$sex)
+levels(abcdData_chronotype$sex)[levels(abcdData_chronotype$sex)=="M"] <- "Male"
+levels(abcdData_chronotype$sex)[levels(abcdData_chronotype$sex)=="F"] <- "Female"
+
+ggplot(abcdData_chronotype, aes(x=pds_p_ss_all_category_2, fill=sex, color=sex)) +
+  geom_histogram(position="dodge", stat="count", alpha=0.6)
+```
+
+
+## Group by sex #
+```{r}
+male <- filter(abcdData_chronotype, sex == "Male") 
+female <- filter(abcdData_chronotype, sex == "Female") 
+```
+
+## Table of descriptives #
+```{r}
+abcdData_chronotype$ancestry <- "European"
+
+abcdData_chronotype %>%
+  dplyr::select(sex, interview_age, ancestry, race_ethnicity, ses_AvgIncomeParentEdu, pds_p_ss_all_category_2, mctq_msfsc_calc.24hr, PRS.CHRONOTYPE.JONES.NoMHC) %>%
+  rename("Age (Months)" = interview_age, "Socioeconomic Status (SES)" = ses_AvgIncomeParentEdu, "Pubertal Stage" = pds_p_ss_all_category_2, "MSFc" = mctq_msfsc_calc.24hr,  "Chronotype PGS" = PRS.CHRONOTYPE.JONES.NoMHC) %>%
+  tbl_summary(digits = list(everything() ~ c(2)), by= sex, missing = "no") %>%
+                add_p(pvalue_fun = function(x) style_pvalue(x, digits = 2)) %>% add_overall() %>% bold_labels() #%>%
+  as_gt() %>% 
+  gt::gtsave( 
+    filename = "Table1.png"
+  )
+```
+
+## MSFc range #
+```{r}
+range(abcdData_chronotype$mctq_msfsc_calc.24hr)
+range(male$mctq_msfsc_calc.24hr)
+range(female$mctq_msfsc_calc.24hr)
+```
+
+## Plot by age #
+```{r}
+my.plot <- ggplot(abcdData_chronotype, aes(y=mctq_msfsc_calc.24hr, x=interview_age, color=sex)) +
+  geom_point(alpha=.3) + 
+  geom_smooth() + stat_cor(method = "pearson", label.x = 155, size=3) +
+  labs(y='Chronotype (MSFc)', x='Age (months)') +
+  ggtitle('Chronotype vs Age by Sex')
+print(my.plot) + theme_classic()
+```
+
+## MSFc residuals controlling for age #
+```{r}
+abcdData_chronotype_MSFCresid <- abcdData_chronotype
+my.model <- lm (mctq_msfsc_calc.24hr ~ interview_age, data = abcdData_chronotype_MSFCresid)
+summary(my.model)
+abcdData_chronotype_MSFCresid$mctq_msfsc_calc.24hr_residualizedage <- my.model$resid
+hist(abcdData_chronotype_MSFCresid$mctq_msfsc_calc.24hr_residualizedage)
+```
+
+# Group by pubertal stage #
+```{r}
+pre.puberty <- filter(abcdData_chronotype_MSFCresid, pds_p_ss_all_category_2 == "Pre Puberty")
+early.puberty <- filter(abcdData_chronotype_MSFCresid, pds_p_ss_all_category_2 == "Early Puberty")
+pre.early.puberty <- filter(abcdData_chronotype_MSFCresid, pds_p_ss_all_category_2 == "Pre Puberty" | pds_p_ss_all_category_2 == "Early Puberty" )
+mid.puberty <- filter(abcdData_chronotype_MSFCresid, pds_p_ss_all_category_2 == "Mid Puberty")
+late.puberty <- filter(abcdData_chronotype_MSFCresid, pds_p_ss_all_category_2 == "Late Puberty")
+post.puberty <- filter(abcdData_chronotype_MSFCresid, pds_p_ss_all_category_2 == "Post Puberty")
+late.post.puberty <- filter(abcdData_chronotype_MSFCresid, pds_p_ss_all_category_2 == "Late Puberty" | pds_p_ss_all_category_2 == "Post Puberty" )
+```
+
+## Compare MSFc between pubertal stages #
+```{r}
+wilcox.test(pre.puberty$mctq_msfsc_calc.24hr_residualizedage, late.post.puberty$mctq_msfsc_calc.24hr_residualizedage, alternative = "two.sided")
+```
+
+## Save data #
+```{r}
+save(abcdData_chronotype_MSFCresid,file="ABCD.Release.3.0.Merged.Data.Chronotype.Rda")
+```
